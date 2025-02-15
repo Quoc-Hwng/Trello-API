@@ -8,6 +8,7 @@ const createNew = async (req, res, next) => {
         description: Joi.string().required().min(3).max(256).trim().strict(),
     })
     try {
+        // abortEarly: false trường hợp có nhiều lỗi validationg thì trả về tất cả lỗi 
         await correctCondition.validateAsync(req.body, { abortEarly: false })
         next()
     } catch (error) {
