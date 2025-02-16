@@ -37,7 +37,7 @@ const createNew = async (data) => {
 const findOneById = async (id) => {
     try {
         return await GET_DB().collection(BOARD_COLLECTION_NAME).findOne({
-            _id: id
+            _id: new ObjectId(String(id))
         })
     } catch (error) { throw new Error(error) }
 }
@@ -66,7 +66,20 @@ const getDetails = async (id) => {
             }
         ]).toArray()
 
-        return result[0] || {}
+        return result[0] || null
+    } catch (error) { throw new Error(error) }
+}
+
+const pushColumnOrderIds = async (column) => {
+    try {
+        const result = await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+            { _id: new ObjectId(String(column.boardId)) },
+            { $push: { columnOrderIds: new ObjectId(String(column._id)) } },
+            //trả về bản ghi đã được cập nhật
+            { returnDocument: 'after' }
+        )
+
+        return result.value
     } catch (error) { throw new Error(error) }
 }
 
@@ -75,5 +88,6 @@ export const boardModel = {
     BOARD_COLLECTION_SCHEMA,
     createNew,
     findOneById,
-    getDetails
+    getDetails,
+    pushColumnOrderIds
 }
