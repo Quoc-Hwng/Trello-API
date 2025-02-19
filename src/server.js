@@ -21,7 +21,7 @@ const START_SERVER = () => {
     //Middleware
     app.use(errorHandlingMiddleware)
 
-    if (env.BUILD_MOVE === 'production') {
+    if (env.BUILD_MODE === 'production') {
         app.listen(process.env.PORT, env.APP_HOST, () => {
             console.log(`Server running at ${process.env.APP_PORT}`)
         })
