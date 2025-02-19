@@ -21,9 +21,17 @@ const START_SERVER = () => {
     //Middleware
     app.use(errorHandlingMiddleware)
 
-    app.listen(env.APP_PORT, env.APP_HOST, () => {
-        console.log(`Server running at http://${env.APP_HOST}:${env.APP_PORT}`)
-    })
+    if (env.BUILD_MOVE === 'production') {
+        app.listen(process.env.PORT, env.APP_HOST, () => {
+            console.log(`Server running at ${process.env.APP_PORT}`)
+        })
+    } else {
+
+        app.listen(env.APP_PORT, env.APP_HOST, () => {
+            console.log(`Server running at http://${env.APP_HOST}:${env.APP_PORT}`)
+        })
+    }
+
 
     //cleanup
     exitHook((signal) => {
