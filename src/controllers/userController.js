@@ -53,7 +53,6 @@ const logout = async (req, res, next) => {
 const refreshToken = async (req, res, next) => {
     try {
         const result = await userService.refreshToken(req.cookies?.refreshToken)
-        console.log(result)
         res.cookie('accessToken', result.accessToken, {
             httpOnly: true,
             secure: true,
@@ -66,10 +65,19 @@ const refreshToken = async (req, res, next) => {
     }
 }
 
+const update = async (req, res, next) => {
+    try {
+        const userId = req.jwtDecoded._id
+        const updateUser = await userService.update(userId, req.body)
+        res.status(StatusCodes.OK).json(updateUser)
+    } catch (error) { next(error) }
+}
+
 export const userController = {
     createNew,
     verifyAccount,
     login,
     logout,
-    refreshToken
+    refreshToken,
+    update
 }
