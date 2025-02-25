@@ -8,6 +8,7 @@ import { BrevoProvider } from "../providers/BrevoProvider";
 import { pickUser } from '~/utils/formatters'
 import { JwtProvider } from "../providers/JwtProvider";
 import { env } from "../config/environment";
+import { CloudinaryProvider } from "../providers/CloudinaryProvider";
 
 const createNew = async (reqBody) => {
     try {
@@ -118,7 +119,7 @@ const refreshToken = async (clientRefreshToken) => {
     }
 }
 
-const update = async (userId, reqBody) => {
+const update = async (userId, reqBody, userAvatarFile) => {
     try {
         const existUser = await userModel.findOneById(userId)
         if (!existUser) throw new ApiError(StatusCodes.NOT_FOUND, 'Account not found!')
@@ -132,6 +133,11 @@ const update = async (userId, reqBody) => {
             }
             updatedUser = await userModel.update(existUser._id, {
                 password: bcrypt.hashSync(reqBody.new_password, 8)
+            })
+        } else if (userAvatarFile) {
+            const uploadResult = await CloudinaryProvider.streamUpload(userAvatarFile.buffer, 'users')
+            updatedUser = await userModel.update(existUser._id, {
+                avatar: uploadResult.secure_url
             })
         } else {
             updatedUser = await userModel.update(existUser._id, reqBody)
