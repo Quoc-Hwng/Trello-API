@@ -5,6 +5,7 @@ import { ObjectId } from 'mongodb'
 import { columnModel } from '~/models/columnModel'
 import { cardModel } from '~/models/cardModel'
 import { BOARD_TYPES } from '../utils/constants'
+import { pagingSkipValue } from '../utils/algorithms'
 
 // Define Collection (name & schema)
 const BOARD_COLLECTION_NAME = 'boards'
@@ -15,6 +16,14 @@ const BOARD_COLLECTION_SCHEMA = Joi.object({
     type: Joi.string().valid(BOARD_TYPES.PUBLIC, BOARD_TYPES.PRIVATE).required(),
 
     columnOrderIds: Joi.array().items(
+        Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+    ).default([]),
+
+    ownerIds: Joi.array().items(
+        Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
+    ).default([]),
+
+    memberIds: Joi.array().items(
         Joi.string().pattern(OBJECT_ID_RULE).message(OBJECT_ID_RULE_MESSAGE)
     ).default([]),
 
@@ -109,6 +118,47 @@ const update = async (boardId, updateData) => {
     } catch (error) { throw new Error(error) }
 }
 
+const getBoards = async (userId, page, itemsPerPage) => {
+    try {
+        const queryConditions = [
+            { _destroy: false },
+
+            {
+                $or: [
+                    { ownerIds: { $all: [new ObjectId(String(userId))] } },
+                    { memberIds: { $all: [new ObjectId(String(userId))] } }
+                ]
+            }
+        ]
+        const query = await GET_DB().collection(BOARD_COLLECTION_NAME).aggregate([
+            { $match: { $and: queryConditions } },
+            { $sort: { title: 1 } },
+            //handle nhiều luồng trong 1 query
+            {
+                $facet: {
+                    //Query board
+                    'queryBoards': [
+                        { $skip: pagingSkipValue(page, itemsPerPage) },
+                        { $limit: itemsPerPage }
+                    ],
+                    //Query đếm tổng tất cả số lượng bản ghi board trong DB trả về
+                    'queryTotalBoards': [{ $count: 'countedAllBoards' }]
+                }
+            }
+        ],//fix B hoa dung truoc a thuong
+            { collation: { locale: 'en' } }
+        ).toArray()
+
+        console.log('query', query)
+        const res = query[0]
+
+        return {
+            boards: res.queryBoards || [],
+            totalBoards: res.queryTotalBoards[0]?.countedAllBoards || 0
+        }
+    } catch (error) { throw new Error(error) }
+}
+
 export const boardModel = {
     BOARD_COLLECTION_NAME,
     BOARD_COLLECTION_SCHEMA,
@@ -117,5 +167,6 @@ export const boardModel = {
     getDetails,
     pushColumnOrderIds,
     pullColumnOrderIds,
-    update
+    update,
+    getBoards
 }
