@@ -141,7 +141,6 @@ const update = async (userId, reqBody, userAvatarFile) => {
             })
         } else {
             updatedUser = await userModel.update(existUser._id, reqBody)
-            console.log(updatedUser)
         }
         return pickUser(updatedUser)
     } catch (error) {
