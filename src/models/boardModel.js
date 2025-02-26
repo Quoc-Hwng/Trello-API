@@ -4,6 +4,7 @@ import { GET_DB } from '../config/mongodb'
 import { ObjectId } from 'mongodb'
 import { columnModel } from '~/models/columnModel'
 import { cardModel } from '~/models/cardModel'
+import { userModel } from '~/models/userModel'
 import { BOARD_TYPES } from '../utils/constants'
 import { pagingSkipValue } from '../utils/algorithms'
 
@@ -86,6 +87,24 @@ const getDetails = async (userId, boardId) => {
                     localField: '_id',
                     foreignField: 'boardId',
                     as: 'cards'
+                }
+            },
+            {
+                $lookup: {
+                    from: userModel.USER_COLLECTION_NAME,
+                    localField: 'ownerIds',
+                    foreignField: '_id',
+                    as: 'owners',
+                    pipeline: [{ $project: { 'password': 0, 'verifyToken': 0 } }]
+                }
+            },
+            {
+                $lookup: {
+                    from: userModel.USER_COLLECTION_NAME,
+                    localField: 'memberIds',
+                    foreignField: '_id',
+                    as: 'members',
+                    pipeline: [{ $project: { 'password': 0, 'verifyToken': 0 } }]
                 }
             }
         ]).toArray()
