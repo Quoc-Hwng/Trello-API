@@ -9,6 +9,7 @@ import { pickUser } from '~/utils/formatters'
 import { JwtProvider } from "../providers/JwtProvider";
 import { env } from "../config/environment";
 import { CloudinaryProvider } from "../providers/CloudinaryProvider";
+import { cardModel } from "../models/cardModel";
 
 const createNew = async (reqBody) => {
     try {
@@ -141,6 +142,9 @@ const update = async (userId, reqBody, userAvatarFile) => {
             })
         } else {
             updatedUser = await userModel.update(existUser._id, reqBody)
+        }
+        if (updatedUser) {
+            await cardModel.updateMany(userId, updatedUser)
         }
         return pickUser(updatedUser)
     } catch (error) {

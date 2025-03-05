@@ -139,7 +139,7 @@ const update = async (boardId, updateData) => {
         updateData.columnOrderIds = updateData.columnOrderIds.map(id => new ObjectId(String(id)))
         Object.keys(updateData).forEach(fieldName => {
             if (INVALID_UPDATE_FIELDS.includes(fieldName)) {
-                delete updateData(fieldName)
+                delete updateData[fieldName]
             }
         })
         return await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
@@ -190,6 +190,16 @@ const getBoards = async (userId, page, itemsPerPage) => {
     } catch (error) { throw new Error(error) }
 }
 
+const pushMemberIds = async (boardId, userId) => {
+    try {
+        return await GET_DB().collection(BOARD_COLLECTION_NAME).findOneAndUpdate(
+            { _id: new ObjectId(String(boardId)) },
+            { $push: { memberIds: new ObjectId(String(userId)) } },
+            { returnDocument: 'after' }
+        )
+    } catch (error) { throw new Error(error) }
+}
+
 export const boardModel = {
     BOARD_COLLECTION_NAME,
     BOARD_COLLECTION_SCHEMA,
@@ -199,5 +209,6 @@ export const boardModel = {
     pushColumnOrderIds,
     pullColumnOrderIds,
     update,
-    getBoards
+    getBoards,
+    pushMemberIds
 }

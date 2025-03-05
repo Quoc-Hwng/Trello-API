@@ -56,7 +56,7 @@ const update = async (userId, updateData) => {
     try {
         Object.keys(updateData).forEach(fieldName => {
             if (INVALID_UPDATE_FIELDS.includes(fieldName)) {
-                delete updateData(fieldName)
+                delete updateData[fieldName]
             }
         })
         return await GET_DB().collection(USER_COLLECTION_NAME).findOneAndUpdate(
@@ -64,6 +64,7 @@ const update = async (userId, updateData) => {
             { $set: updateData },
             { returnDocument: 'after' }
         )
+
     } catch (error) { throw new Error(error) }
 }
 

@@ -44,12 +44,12 @@ const update = async (cardId, reqBody, cardCoverFile, userInfo) => {
                 userEmail: userInfo.email
             }
             updatedCard = await cardModel.unshiftNewComment(cardId, commentData)
+        } else if (updateData.incomingMemberInfo) {
+            updatedCard = await cardModel.updateMembers(cardId, updateData.incomingMemberInfo)
         }
         else {
             updatedCard = await cardModel.update(cardId, updateData)
         }
-
-
         return updatedCard
     } catch (error) {
         throw error

@@ -2,6 +2,7 @@ import Joi from 'joi'
 import { OBJECT_ID_RULE, OBJECT_ID_RULE_MESSAGE, EMAIL_RULE, EMAIL_RULE_MESSAGE } from '~/utils/validators'
 import { ObjectId } from 'mongodb'
 import { GET_DB } from '../config/mongodb'
+import { CARD_MEMBER_ACTIONS } from '../utils/constants'
 
 const CARD_COLLECTION_NAME = 'cards'
 const CARD_COLLECTION_SCHEMA = Joi.object({
@@ -60,7 +61,7 @@ const update = async (cardId, updateData) => {
     try {
         Object.keys(updateData).forEach(fieldName => {
             if (INVALID_UPDATE_FIELDS.includes(fieldName)) {
-                delete updateData(fieldName)
+                delete updateData[fieldName]
             }
         })
 
@@ -84,12 +85,51 @@ const deleteManyByColumnId = async (columnId) => {
 
 const unshiftNewComment = async (cardId, commentData) => {
     try {
+        if (commentData.userId) commentData.userId = new ObjectId(String(commentData.userId))
         const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
             { _id: new ObjectId(String(cardId)) },
             { $push: { comments: { $each: [commentData], $position: 0 } } },
             { returnDocument: 'after' }
         )
         return result
+    } catch (error) { throw new Error(error) }
+}
+
+const updateMembers = async (cardId, incomingMemberInfo) => {
+    try {
+        let updateCondition = {}
+        if (incomingMemberInfo.action === CARD_MEMBER_ACTIONS.ADD) {
+            updateCondition = { $push: { memberIds: new ObjectId(String(incomingMemberInfo.userId)) } }
+        }
+        else if (incomingMemberInfo.action === CARD_MEMBER_ACTIONS.REMOVE) {
+            updateCondition = { $pull: { memberIds: new ObjectId(String(incomingMemberInfo.userId)) } }
+        }
+
+        const result = await GET_DB().collection(CARD_COLLECTION_NAME).findOneAndUpdate(
+            { _id: new ObjectId(String(cardId)) },
+            updateCondition,
+            { returnDocument: 'after' }
+        )
+        return result
+    } catch (error) { throw new Error(error) }
+}
+
+const updateMany = async (userId, updatedUser) => {
+    try {
+        await GET_DB().collection(CARD_COLLECTION_NAME).updateMany(
+            { 'comments.userId': new ObjectId(String(userId)) },
+            {
+                $set: {
+                    //Sử dụng positional filtered operator $[elem] để xác định phần tử trong mảng cần update
+                    'comments.$[elem].userDisplayName': updatedUser.displayName,
+                    "comments.$[elem].userAvatar": updatedUser.avatar
+                }
+            },
+            {
+                //Xác định điều kiện để lọc các phần tử trong mảng cần update
+                arrayFilters: [{ 'elem.userId': new ObjectId(String(userId)) }]
+            }
+        )
     } catch (error) { throw new Error(error) }
 }
 
@@ -100,5 +140,7 @@ export const cardModel = {
     findOneById,
     update,
     deleteManyByColumnId,
-    unshiftNewComment
+    unshiftNewComment,
+    updateMembers,
+    updateMany
 }
